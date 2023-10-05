@@ -4,9 +4,14 @@ import React from 'react'
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
 
+// Context API
+import { useProduct } from '../context/ProductContext';
+
 const ProductCard = (props) => {
 
-  const { name, price, category, imageURL } = props
+  const { id, name, price, category, imageURL } = props
+
+  const { handleAdd, addRemovecartLoading } = useProduct();
 
   return (
 
@@ -21,11 +26,12 @@ const ProductCard = (props) => {
 
       <Card.Body>
         <div className="d-grid">
-          <Button variant="primary"> Add to Cart </Button>
-
+          <Button disabled={addRemovecartLoading} onClick={() => handleAdd({ id, name, price, imageURL, category })} variant="primary"> Add to Cart </Button>
         </div>
       </Card.Body>
     </Card>
+
+
   )
 }
 
