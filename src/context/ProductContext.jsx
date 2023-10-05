@@ -12,6 +12,8 @@ import {
   setDoc,
   deleteDoc,
   increment,
+  getDocs,
+  writeBatch,
 } from "firebase/firestore";
 
 import { firestoreDb } from "../config/firebaseInit";
@@ -37,6 +39,7 @@ const ProductProvider = (props) => {
   const { currentUser } = useAuth();
   const [addRemovecartLoading, setAddRemoveCartLoading] = useState(false);
   const [userCart, setuserCart] = useState([]);
+  const [userOrder, setUserOrder] = useState([]);
 
   /********** Find the minimum and maximum prices **********/
   useEffect(() => {
@@ -100,7 +103,7 @@ const ProductProvider = (props) => {
         const productArray = [];
         querySnapshot.forEach((doc) => {
           productArray.push({ ...doc.data(), id: doc.id });
-          console.log("productArray --> ",productArray);
+          // console.log("productArray --> ",productArray);
         });
 
         setProduct(productArray);     
@@ -240,6 +243,82 @@ const ProductProvider = (props) => {
       0
     );
   };
+  
+
+  /********** Place an order **********/
+
+  const placeOrder = async () => {
+    setProductLoading(true);
+    try {
+      let orderDate = date.toString() + "-" + month.toString() + "-" + year.toString();
+      let newOrder = { userCart, orderDate };
+      const ordersCollectionRef = collection(
+        firestoreDb,
+        `userOrders/${currentUser.uid}/orders`
+      );
+      await setDoc(doc(ordersCollectionRef), newOrder);
+
+      // Clear the user's cart in the "carts" subcollection
+      const cartCollectionRef = collection(
+        firestoreDb,
+        `usersCarts/${currentUser.uid}/myCart`
+      );
+      const cartQuerySnapshot = await getDocs(cartCollectionRef);
+      const batch = writeBatch(firestoreDb);
+
+      cartQuerySnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      await batch.commit();
+      // we use a batched write to delete all the documents 
+      // within the "myCart" subcollection under the 
+      // user's cart, leaving the "usersCarts" document intact.
+      
+      setuserCart([]);
+
+      toast.success("Order placed successfully !");
+    } catch (error) {
+      toast.error("Error placing order !");
+      console.error("Error placing order:", error);
+    }
+    setProductLoading(false);
+  };
+
+
+  /********** Get user order history **********/
+  const getUserOrderHistory = async () => {
+    setProductLoading(true);
+    try {
+      const ordersCollectionRef = collection(
+        firestoreDb,
+        `userOrders/${currentUser.uid}/orders`
+      );
+  
+      // Realtime Database
+      const q = query(
+        ordersCollectionRef,
+        orderBy("orderDate", "desc") // Sort by addedDate in descending order
+      );
+      onSnapshot(q, (querySnapshot) => {
+        const orderHistory = [];
+  
+        querySnapshot.forEach((doc) => {
+          orderHistory.push({ id: doc.id, ...doc.data() });
+        });
+        setUserOrder(orderHistory);
+      });
+    } catch(error) {
+      console.log("Error in order history !!", error);
+    }
+    setProductLoading(false);
+
+  };
+
+  // useEffect(() => {
+  //   getUserOrderHistory();
+  // }, []);
+
 
   return (
     <ProductContext.Provider
@@ -255,6 +334,9 @@ const ProductProvider = (props) => {
         getUserCart,
         TotalCart,
         addRemovecartLoading,
+        placeOrder,
+        getUserOrderHistory,
+        userOrder,
       }}
     >
       {props.children}

@@ -19,7 +19,8 @@ const Cart = () => {
     productLoading,
     getUserCart, 
     TotalCart,
-    addRemovecartLoading 
+    addRemovecartLoading,
+    placeOrder,
   } = useProduct();
 
   useEffect(() => {
@@ -81,7 +82,7 @@ const Cart = () => {
                     </div>
 
                     <div className="d-grid mt-3">
-                      <Button variant="danger" as={NavLink} to="/order" >Purchase</Button>
+                      <Button variant="danger" as={NavLink} to="/order" onClick={() => { placeOrder() }}>Purchase</Button>
                     </div>
                   </div>
                 </div>
